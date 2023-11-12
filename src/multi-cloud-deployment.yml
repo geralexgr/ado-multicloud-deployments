@@ -1,0 +1,66 @@
+trigger:
+- main
+
+pool:
+  vmImage: ubuntu-latest
+
+stages:
+- stage: azure_iac
+  displayName: Deploy IAC on Azure
+  jobs:
+  - job: azure_job
+    displayName: deploy resources on azure
+    steps:
+
+    - task: TerraformInstaller@1
+      displayName: terraform install
+      inputs:
+        terraformVersion: 'latest'
+
+    - task: TerraformTaskV4@4
+      displayName: terraform init
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        workingDirectory: '$(Build.SourcesDirectory)/src/azure'
+        backendServiceArm: 'geralexgr-azure'
+        backendAzureRmResourceGroupName: 'devops-infra'
+        backendAzureRmStorageAccountName: 'terraform'
+        backendAzureRmContainerName: 'state'
+        backendAzureRmKey: 'file'
+    - task: TerraformTaskV4@4
+      displayName: terraform apply
+      inputs:
+        provider: 'azurerm'
+        command: 'apply'
+        workingDirectory: '$(Build.SourcesDirectory)/src/azure'
+        commandOptions: '-var-file=$(Build.SourcesDirectory)/src/envs/dev.tfvars'
+        environmentServiceNameAzureRM: 'geralexgr-azure'
+
+- stage: aws_iac
+  displayName: Deploy IAC on AWS
+  jobs:
+  - job: aws_job
+    displayName: deploy resources on aws
+    steps:
+    - task: TerraformInstaller@1
+      displayName: terraform install
+      inputs:
+        terraformVersion: 'latest'
+    - task: TerraformTaskV4@4
+      displayName: terraform init
+      inputs:
+        provider: 'aws'
+        command: 'init'
+        workingDirectory: '$(Build.SourcesDirectory)/src/aws'
+        backendServiceAWS: 'aws-eu-west-1'
+        backendAWSBucketName: 'terraform'
+        backendAWSKey: 'terraform.tfstate'
+    - task: TerraformTaskV4@4
+      displayName: terraform apply
+      inputs:
+        provider: 'aws'
+        command: 'apply'
+        workingDirectory: '$(Build.SourcesDirectory)/src/aws'
+        commandOptions: '-var-file=$(Build.SourcesDirectory)/src/envs/dev.tfvars'
+        environmentServiceNameAWS: 'aws-eu-west-1'

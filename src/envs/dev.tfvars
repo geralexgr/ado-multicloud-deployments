@@ -1,0 +1,1 @@
+serverless_app_name = "multicloudapp"
